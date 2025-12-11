@@ -68,7 +68,7 @@
 //                messageReadStatusService
 //        );
 //
-//        // 테스트 사용자 생성 및 저장
+//        / 테스트 사용자 생성 및 저장
 //        User testUser = User.builder()
 //                .id(userId)
 //                .name(faker.name().fullName())
