@@ -27,10 +27,11 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final FileService fileService;
+//    private final FileService fileService;
 
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    @Value("${app.profile-image.base-url}")
+    private String baseUrl;
+
 
     @Value("${app.profile.image.max-size:5242880}") // 5MB
     private long maxProfileImageSize;
@@ -71,34 +72,21 @@ public class UserService {
      * 프로필 이미지 업로드
      * @param email 사용자 이메일
      */
-    public ProfileImageResponse uploadProfileImage(String email, MultipartFile file) {
-        // 사용자 조회
+
+    public ProfileImageResponse uploadProfileImage(String email, String imageKey) {
+
         User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
-        // 파일 유효성 검증
-        validateProfileImageFile(file);
-
-        // 기존 프로필 이미지 삭제
         if (user.getProfileImage() != null && !user.getProfileImage().isEmpty()) {
             deleteOldProfileImage(user.getProfileImage());
         }
 
-        // 새 파일 저장 (보안 검증 포함)
-        String profileImageUrl = fileService.storeFile(file, "profiles");
-
-        // 사용자 프로필 이미지 URL 업데이트
-        user.setProfileImage(profileImageUrl);
+        user.setProfileImage(imageKey);
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
-        log.info("프로필 이미지 업로드 완료 - User ID: {}, File: {}", user.getId(), profileImageUrl);
-
-        return new ProfileImageResponse(
-                true,
-                "프로필 이미지가 업데이트되었습니다.",
-                profileImageUrl
-        );
+        return new ProfileImageResponse(true, "프로필 이미지가 업데이트되었습니다.", imageKey);
     }
 
     /**
@@ -148,17 +136,12 @@ public class UserService {
      */
     private void deleteOldProfileImage(String profileImageUrl) {
         try {
-            if (profileImageUrl != null && profileImageUrl.startsWith("/uploads/")) {
-                // URL에서 파일명 추출
-                String filename = profileImageUrl.substring("/uploads/".length());
-                Path filePath = Paths.get(uploadDir, filename);
-
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                    log.info("기존 프로필 이미지 삭제 완료: {}", filename);
-                }
+            if (profileImageUrl == null || profileImageUrl.isEmpty()) {
+                return;
             }
-        } catch (IOException e) {
+            String key = profileImageUrl.replace(profileImageUrl + "/", "");
+
+        } catch (Exception e) {
             log.warn("기존 프로필 이미지 삭제 실패: {}", e.getMessage());
         }
     }
@@ -172,7 +155,7 @@ public class UserService {
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
         if (user.getProfileImage() != null && !user.getProfileImage().isEmpty()) {
-            deleteOldProfileImage(user.getProfileImage());
+
             user.setProfileImage("");
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);

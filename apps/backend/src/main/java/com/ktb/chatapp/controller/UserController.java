@@ -120,13 +120,14 @@ public class UserController {
         @ApiResponse(responseCode = "500", description = "서버 내부 오류",
             content = @Content(schema = @Schema(implementation = StandardResponse.class)))
     })
+
     @PostMapping("/profile-image")
     public ResponseEntity<?> uploadProfileImage(
             Principal principal,
-            @RequestParam("profileImage") MultipartFile file) {
+            @RequestBody String imageId) {
 
         try {
-            ProfileImageResponse response = userService.uploadProfileImage(principal.getName(), file);
+            ProfileImageResponse response = userService.uploadProfileImage(principal.getName(), imageId);
             return ResponseEntity.ok(response);
         } catch (UsernameNotFoundException e) {
             log.error("프로필 이미지 업로드 실패 - 사용자 없음: {}", e.getMessage());
