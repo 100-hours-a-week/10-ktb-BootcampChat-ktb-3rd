@@ -8,7 +8,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
+import org.springframework.data.redis.connection.RedisStringCommands;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -40,12 +42,37 @@ public class RedisSessionStore implements SessionStore {
             long ttlMillis = session.getExpiresAt().toEpochMilli() - Instant.now().toEpochMilli();
             if (ttlMillis <= 500) ttlMillis = 1000;
 
-            // 1) 세션 정보 저장
-            redis.opsForValue().set(sessionKey(session.getSessionId()), sessionJson, Duration.ofMillis(ttlMillis));
+            final byte[] keySessionBytes = sessionKey(session.getSessionId()).getBytes();
+            final byte[] sessionJsonBytes = sessionJson.getBytes();
+            final byte[] keyUserSessionsBytes = userSessionsKey(session.getUserId()).getBytes();
+            final byte[] sessionIdBytes = session.getSessionId().getBytes();
+            final long finalTtlMillis = ttlMillis;
 
-            // 2) userId → sessionId 목록에 추가
-            redis.opsForSet().add(userSessionsKey(session.getUserId()), session.getSessionId());
+            redis.execute((RedisCallback<Object>) connection -> {
 
+                connection.multi();
+
+                // 1) 세션 저장
+                connection.stringCommands().set(
+                        keySessionBytes,
+                        sessionJsonBytes
+                );
+
+                // 2) TTL 설정
+                connection.keyCommands().pExpire(
+                        keySessionBytes,
+                        finalTtlMillis
+                );
+
+                // 3) 유저의 세션 목록에 sessionId 추가
+                connection.setCommands().sAdd(
+                        keyUserSessionsBytes,
+                        sessionIdBytes
+                );
+
+                // 반드시 exec 결과 리턴해야 트랜잭션이 보장된다!
+                return connection.exec();
+            });
             return session;
         } catch (Exception e) {
             throw new RuntimeException("세션 저장 실패", e);
