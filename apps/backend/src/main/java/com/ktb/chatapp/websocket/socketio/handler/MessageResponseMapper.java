@@ -4,12 +4,15 @@ import com.ktb.chatapp.dto.FileResponse;
 import com.ktb.chatapp.dto.MessageResponse;
 import com.ktb.chatapp.dto.UserResponse;
 import com.ktb.chatapp.model.Message;
+import com.ktb.chatapp.model.MessageType;
 import com.ktb.chatapp.model.User;
 import com.ktb.chatapp.repository.FileRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +24,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class MessageResponseMapper {
-
-    private final FileRepository fileRepository;
 
     /**
      * Message 엔티티를 MessageResponse DTO로 변환
@@ -53,17 +54,27 @@ public class MessageResponseMapper {
                     .build());
         }
 
-        // 파일 정보 설정
-        Optional.ofNullable(message.getFileId())
-                .flatMap(fileRepository::findById)
-                .map(file -> FileResponse.builder()
-                        .id(file.getId())
-                        .filename(file.getFilename())
-                        .originalname(file.getOriginalname())
-                        .mimetype(file.getMimetype())
-                        .size(file.getSize())
-                        .build())
-                .ifPresent(builder::file);
+        if (message.getMetadata() != null && message.getType() == MessageType.file) {
+            Map<String, Object> meta = message.getMetadata();
+
+            // size 타입 처리 (Integer 또는 Long)
+            long fileSize = 0L;
+            Object sizeObj = meta.get("size");
+            if (sizeObj instanceof Number) {
+                fileSize = ((Number) sizeObj).longValue();
+            }
+
+            FileResponse file = FileResponse.builder()
+                    .id((String) meta.get("_id"))
+                    .filename((String) meta.get("filename"))
+                    .originalname((String) meta.get("originalname"))
+                    .mimeType((String) meta.get("mimeType"))
+                    .size(fileSize)
+                    .url((String) meta.get("url"))
+                    .build();
+
+            builder.file(file);
+        }
 
         // 메타데이터 설정
         if (message.getMetadata() != null) {
@@ -73,3 +84,4 @@ public class MessageResponseMapper {
         return builder.build();
     }
 }
+

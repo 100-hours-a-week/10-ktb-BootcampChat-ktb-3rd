@@ -1,16 +1,17 @@
 package com.ktb.chatapp.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ktb.chatapp.model.AiType;
 import com.ktb.chatapp.model.Message;
 import com.ktb.chatapp.model.MessageType;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 메시지 응답 DTO.

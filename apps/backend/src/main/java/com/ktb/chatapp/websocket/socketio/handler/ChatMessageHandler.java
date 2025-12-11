@@ -167,7 +167,7 @@ public class ChatMessageHandler {
             // AI 멘션 처리
             aiService.handleAIMentions(roomId, socketUser.id(), messageContent);
 
-            sessionService.updateLastActivity(socketUser.authSessionId());
+            sessionService.updateLastActivity(socketUser.id());
 
             // Record success metrics
             recordMessageSuccess(messageType);
@@ -177,7 +177,7 @@ public class ChatMessageHandler {
                     savedMessage.getId(), savedMessage.getType(), roomId);
 
         } catch (Exception e) {
-            recordError("ㅣexception");
+            recordError("exception");
             log.error("Message handling error", e);
             client.sendEvent(ERROR, Map.of(
                     "code", "MESSAGE_ERROR",
@@ -187,34 +187,31 @@ public class ChatMessageHandler {
         }
     }
 
+    // 프론트에서 S3 업로드 후 파일 정보를 전달받아 저장
     private Message handleFileMessage(String roomId, String userId, MessageContent messageContent, Map<String, Object> fileData) {
-        if (fileData == null || fileData.get("_id") == null) {
-            throw new IllegalArgumentException("파일 데이터가 올바르지 않습니다.");
-        }
-
-        String fileId = (String) fileData.get("_id");
-        File file = fileRepository.findById(fileId).orElse(null);
-
-        if (file == null || !file.getUser().equals(userId)) {
-            throw new IllegalStateException("파일을 찾을 수 없거나 접근 권한이 없습니다.");
+        // 프론트 필드: _id, filename, originalname, mimeType, size, url
+        String fileUrl = (String) fileData.get("filename");
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new IllegalArgumentException("파일 filename 누락되었습니다.");
         }
 
         Message message = new Message();
         message.setRoomId(roomId);
         message.setSenderId(userId);
         message.setType(MessageType.file);
-        message.setFileId(fileId);
         message.setContent(messageContent.getTrimmedContent());
         message.setTimestamp(LocalDateTime.now());
-        message.setMentions(messageContent.aiMentions());
+        // file metadata (프론트 필드명 그대로 저장)
 
-        // 메타데이터는 Map<String, Object>
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("fileType", file.getMimetype());
-        metadata.put("fileSize", file.getSize());
-        metadata.put("originalName", file.getOriginalname());
-        message.setMetadata(metadata);
+        metadata.put("_id", fileData.get("_id"));
+        metadata.put("filename", fileData.get("filename"));
+        metadata.put("originalname", fileData.get("originalname"));
+        metadata.put("fileType", fileData.get("mimeType"));
+        metadata.put("fileSize", fileData.get("fileSize"));
 
+        message.setMetadata(metadata);
+        log.info(message.getContent());
         return message;
     }
 
@@ -244,11 +241,6 @@ public class ChatMessageHandler {
         messageResponse.setReactions(message.getReactions() != null ? message.getReactions() : Collections.emptyMap());
         messageResponse.setSender(UserResponse.from(sender));
         messageResponse.setMetadata(message.getMetadata());
-
-        if (message.getFileId() != null) {
-            fileRepository.findById(message.getFileId())
-                    .ifPresent(file -> messageResponse.setFile(FileResponse.from(file)));
-        }
 
         return messageResponse;
     }
