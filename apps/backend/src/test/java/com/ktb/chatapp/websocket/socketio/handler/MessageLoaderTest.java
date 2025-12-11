@@ -60,7 +60,7 @@ class MessageLoaderTest {
         messageLoader = new MessageLoader(
                 messageRepository,
                 userRepository,
-                new MessageResponseMapper(fileRepository),
+//                new MessageResponseMapper(fileRepository),
                 messageReadStatusService
         );
         
