@@ -3,7 +3,6 @@ package com.ktb.chatapp.config;
 import com.corundumstudio.socketio.AuthTokenListener;
 import com.corundumstudio.socketio.SocketConfig;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.corundumstudio.socketio.annotation.SpringAnnotationScanner;
 import com.corundumstudio.socketio.namespace.Namespace;
 import com.corundumstudio.socketio.protocol.JacksonJsonSupport;
 import com.corundumstudio.socketio.store.MemoryStoreFactory;
@@ -12,14 +11,9 @@ import com.ktb.chatapp.websocket.socketio.ChatDataStore;
 import com.ktb.chatapp.websocket.socketio.LocalChatDataStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Role;
-
-import static org.springframework.beans.factory.config.BeanDefinition.ROLE_INFRASTRUCTURE;
 
 @Slf4j
 @Configuration
@@ -65,17 +59,9 @@ public class SocketIOConfig {
         return socketIOServer;
     }
 
-    /**
-     * SpringAnnotationScanner는 BeanPostProcessor로서
-     * ApplicationContext 초기화 초기에 등록되고,
-     * 내부에서 사용하는 SocketIOServer는 Lazy로 지연되어
-     * 다른 Bean들의 초기화 과정에 간섭하지 않게 한다.
-     */
-    @Bean
-    @Role(ROLE_INFRASTRUCTURE)
-    public BeanPostProcessor springAnnotationScanner(@Lazy SocketIOServer socketIOServer) {
-        return new SpringAnnotationScanner(socketIOServer);
-    }
+    // SpringAnnotationScanner 제거됨
+    // - SocketIOEventRegistrar가 ApplicationReadyEvent에서 명시적으로 핸들러 등록
+    // - SpringAnnotationScanner와 중복 등록되어 메시지가 2번 처리되는 문제 해결
 
     // 인메모리 저장소, 단일 노드 환경에서만 사용 (chat.datastore.type=local 일 때만 활성화)
     @Bean
