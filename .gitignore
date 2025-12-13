@@ -53,3 +53,7 @@ yarn-error.log*
 # Misc
 .cache/
 *.tsbuildinfo
+
+.mcp.json
+.claude
+CLAUDE.md
