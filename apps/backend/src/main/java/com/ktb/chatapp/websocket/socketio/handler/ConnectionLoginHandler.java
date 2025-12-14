@@ -74,7 +74,7 @@ public class ConnectionLoginHandler {
             
             connectedUsers.set(userId, user);
 
-            log.info("Socket.IO user connected: {} ({}) - Total concurrent users: {}",
+            log.debug("Socket.IO user connected: {} ({}) - Total concurrent users: {}",
                     getUserName(client), userId, connectedUsers.size());
 
             client.joinRooms(Set.of("user:" + userId, "room-list"));
@@ -114,7 +114,7 @@ public class ConnectionLoginHandler {
             client.del("user");
             client.disconnect();
             
-            log.info("Socket.IO user disconnected: {} ({}) - Total concurrent users: {}",
+            log.debug("Socket.IO user disconnected: {} ({}) - Total concurrent users: {}",
                     userName, userId, connectedUsers.size());
         } catch (Exception e) {
             log.error("Error handling Socket.IO disconnection", e);
