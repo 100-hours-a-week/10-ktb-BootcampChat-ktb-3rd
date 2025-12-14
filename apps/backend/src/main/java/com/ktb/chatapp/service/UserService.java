@@ -63,7 +63,7 @@ public class UserService {
         user.setUpdatedAt(LocalDateTime.now());
 
         User updatedUser = userRepository.save(user);
-        log.info("사용자 프로필 업데이트 완료 - ID: {}, Name: {}", user.getId(), request.getName());
+        log.debug("사용자 프로필 업데이트 완료 - ID: {}, Name: {}", user.getId(), request.getName());
 
         return UserResponse.from(updatedUser);
     }
@@ -159,7 +159,7 @@ public class UserService {
             user.setProfileImage("");
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
-            log.info("프로필 이미지 삭제 완료 - User ID: {}", user.getId());
+            log.debug("프로필 이미지 삭제 완료 - User ID: {}", user.getId());
         }
     }
 
@@ -176,6 +176,6 @@ public class UserService {
         }
 
         userRepository.delete(user);
-        log.info("회원 탈퇴 완료 - User ID: {}", user.getId());
+        log.debug("회원 탈퇴 완료 - User ID: {}", user.getId());
     }
 }

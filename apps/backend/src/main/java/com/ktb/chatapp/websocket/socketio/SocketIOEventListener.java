@@ -27,7 +27,7 @@ public class SocketIOEventListener {
                             "reason", event.getReason(),
                             "message", event.getMessage()
                     ));
-            log.info("session_ended 이벤트 발송: userId={}, reason={}", event.getUserId(), event.getReason());
+            log.debug("session_ended 이벤트 발송: userId={}, reason={}", event.getUserId(), event.getReason());
         } catch (Exception e) {
             log.error("session_ended 이벤트 발송 실패: userId={}", event.getUserId(), e);
         }
@@ -37,7 +37,7 @@ public class SocketIOEventListener {
     public void handleRoomCreatedEvent(RoomCreatedEvent event) {
         try {
             socketIOServer.getRoomOperations("room-list").sendEvent(ROOM_CREATED, event.getRoomResponse());
-            log.info("roomCreated 이벤트 발송: roomId={}", event.getRoomResponse().getId());
+            log.debug("roomCreated 이벤트 발송: roomId={}", event.getRoomResponse().getId());
         } catch (Exception e) {
             log.error("roomCreated 이벤트 발송 실패", e);
         }
@@ -47,7 +47,7 @@ public class SocketIOEventListener {
     public void handleRoomUpdatedEvent(RoomUpdatedEvent event) {
         try {
             socketIOServer.getRoomOperations(event.getRoomId()).sendEvent(ROOM_UPDATE, event.getRoomResponse());
-            log.info("roomUpdate 이벤트 발송: roomId={}", event.getRoomId());
+            log.debug("roomUpdate 이벤트 발송: roomId={}", event.getRoomId());
         } catch (Exception e) {
             log.error("roomUpdate 이벤트 발송 실패: roomId={}", event.getRoomId(), e);
         }
@@ -63,7 +63,7 @@ public class SocketIOEventListener {
             );
             socketIOServer.getRoomOperations(event.getRoomId())
                     .sendEvent(AI_MESSAGE_START, data);
-            log.info("aiMessageStart 이벤트 발송: roomId={}, messageId={}",
+            log.debug("aiMessageStart 이벤트 발송: roomId={}, messageId={}",
                     event.getRoomId(), event.getMessageId());
         } catch (Exception e) {
             log.error("aiMessageStart 이벤트 발송 실패: roomId={}", event.getRoomId(), e);
@@ -98,7 +98,7 @@ public class SocketIOEventListener {
             );
             socketIOServer.getRoomOperations(event.getRoomId())
                     .sendEvent(AI_MESSAGE_COMPLETE, data);
-            log.info("aiMessageComplete 이벤트 발송: roomId={}, messageId={}",
+            log.debug("aiMessageComplete 이벤트 발송: roomId={}, messageId={}",
                     event.getRoomId(), event.getSavedMessageId());
         } catch (Exception e) {
             log.error("aiMessageComplete 이벤트 발송 실패: roomId={}", event.getRoomId(), e);
