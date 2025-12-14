@@ -72,7 +72,7 @@ public class SecurityConfig {
                                 "/api/swagger-ui/**",
                                 "/api/swagger-ui.html",
                                 "/api/docs/**",
-                                "/api/files/upload",
+                                // "/api/files/upload",
                                 "/api/uploads/**"
                         ).permitAll()
                         .requestMatchers("/api/**").authenticated()
