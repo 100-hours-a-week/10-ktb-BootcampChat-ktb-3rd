@@ -47,6 +47,7 @@ public class SecurityConfig {
     );
 
     private static final List<String> CORS_EXPOSED_HEADERS = List.of(
+            "Authorization",
             "x-auth-token",
             "x-session-id"
     );
@@ -169,11 +170,11 @@ public class SecurityConfig {
 
     private CorsConfiguration createCorsConfiguration() {
         CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(List.of(
-//                "http://localhost:3000",
-//                "https://chat.goorm-ktb-010.goorm.team"
-//        ));
-        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "https://chat.goorm-ktb-010.goorm.team"
+        ));
+//        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(CORS_ALLOWED_METHODS);
         config.setAllowedHeaders(CORS_ALLOWED_HEADERS);
         config.setExposedHeaders(CORS_EXPOSED_HEADERS);
