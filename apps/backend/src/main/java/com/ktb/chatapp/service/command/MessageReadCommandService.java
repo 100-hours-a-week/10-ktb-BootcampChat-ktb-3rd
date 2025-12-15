@@ -110,7 +110,7 @@ public class MessageReadCommandService {
         if (!allReadMessageIds.isEmpty()) {
 
             // 3️⃣ 상태 고정
-            messageRepository.markAllReadIfCompleted(allReadMessageIds, participantsToRead);
+            messageRepository.markAllRead(allReadMessageIds);
 
             // 4️⃣ 🔥 ACK 브로드캐스트 (E2E 핵심)
             broadcastService.broadcastToRoom(
