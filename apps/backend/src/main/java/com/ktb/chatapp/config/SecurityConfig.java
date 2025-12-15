@@ -4,15 +4,10 @@ import com.ktb.chatapp.security.CustomBearerTokenResolver;
 import com.ktb.chatapp.security.SessionAwareJwtAuthenticationConverter;
 import java.time.Duration;
 import java.util.List;
-
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -47,7 +42,6 @@ public class SecurityConfig {
     );
 
     private static final List<String> CORS_EXPOSED_HEADERS = List.of(
-            "Authorization",
             "x-auth-token",
             "x-session-id"
     );
@@ -55,58 +49,45 @@ public class SecurityConfig {
     private static final List<String> CORS_ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
 
     @Bean
-    public PasswordEncoder passwordEncoder(
-            @Value("${security.bcrypt.strength:10}") int strength
-    ) {
-        return new BCryptPasswordEncoder(strength);
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
-        /* ===============================
-           1️⃣ AUTH 전용 (JWT 검사 ❌)
-           =============================== */
-        @Bean
-        @Order(1)
-        public SecurityFilterChain publicChain(HttpSecurity http) throws Exception {
-            http
-                    .securityMatcher(
-                            "/api/auth/**",
-                            "/api/health",
-                            "/api/files/**",
-                            "/api/uploads/**",
-                            "/api/v3/api-docs/**",
-                            "/api/swagger-ui/**",
-                            "/api/swagger-ui.html",
-                            "/api/docs/**"
-                    )
-                    .csrf(AbstractHttpConfigurer::disable)
-                    .cors(cors -> cors.configurationSource(request -> createCorsConfiguration()))
-                    .authorizeHttpRequests(auth -> auth
-                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                            .anyRequest().permitAll()
-                    );
-
-            return http.build();
-        }
 
     @Bean
-    @Order(2)
-    public SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                .securityMatcher("/api/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(request -> createCorsConfiguration()))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/health").permitAll()
-                        .anyRequest().authenticated()
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/api/health",
+                                "/api/auth/**",
+                                "/api/v3/api-docs/**",
+                                "/api/swagger-ui/**",
+                                "/api/swagger-ui.html",
+                                "/api/docs/**",
+//                                "/api/files/upload",
+                                "/api/uploads/**"
+                        ).permitAll()
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll()
                 )
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .securityMatcher("/api/**")
+
+
+
+
+
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                // Spring Security 6 OAuth2 Resource Server 설정
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(bearerTokenResolver)
                         .jwt(jwt -> jwt
@@ -120,11 +101,20 @@ public class SecurityConfig {
 
     private CorsConfiguration createCorsConfiguration() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "https://chat.goorm-ktb-010.goorm.team"
-        ));
-//        config.setAllowedOriginPatterns(List.of("*"));
+//        if (CORS_ALLOWED_ORIGINS.contains("*")) {
+//            log.warn("╔═══════════════════════════════════════════════════════════════════════════════╗");
+//            log.warn("║                           ⚠️  CORS 보안 경고  ⚠️                              ║");
+//            log.warn("╠═══════════════════════════════════════════════════════════════════════════════╣");
+//            log.warn("║  CORS_ALLOWED_ORIGINS에 와일드카드 '*'가 포함되어 있습니다.                 ║");
+//            log.warn("║  ➜ 모든 Origin의 요청을 허용하므로 보안 위험이 있습니다.                    ║");
+//            log.warn("║                                                                               ║");
+//            log.warn("║  🔓 예상하지 못한 도메인에서의 요청도 수용됩니다:                           ║");
+//            log.warn("║     예시) https://a-team-front.com → https://b-team-backend.com             ║");
+//            log.warn("║                                                                               ║");
+//            log.warn("║  💡 팀 도메인으로 CORS 설정하세요.         ║");
+//            log.warn("╚═══════════════════════════════════════════════════════════════════════════════╝");
+//        }
+        config.setAllowedOriginPatterns(CORS_ALLOWED_ORIGINS);
         config.setAllowedMethods(CORS_ALLOWED_METHODS);
         config.setAllowedHeaders(CORS_ALLOWED_HEADERS);
         config.setExposedHeaders(CORS_EXPOSED_HEADERS);
@@ -132,55 +122,4 @@ public class SecurityConfig {
         config.setMaxAge(Duration.ofHours(1).getSeconds());
         return config;
     }
-
-//    private CorsConfiguration cors(HttpServletRequest request) {
-//        CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOriginPatterns(List.of("*"));
-//        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-//        config.setAllowedHeaders(List.of("*"));
-//        config.setExposedHeaders(List.of("x-auth-token","x-session-id"));
-//        config.setAllowCredentials(true);
-//        config.setMaxAge(3600L);
-//        return config;
-//    }
-
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//
-//        http
-//                .csrf(AbstractHttpConfigurer::disable)
-//                .cors(cors -> cors.configurationSource(request -> createCorsConfiguration()))
-//                .authorizeHttpRequests(authorize -> authorize
-//                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/api/**").permitAll()
-//                        .requestMatchers(
-//                                "/api/health",
-//                                "/api/auth/**",
-//                                "/api/v3/api-docs/**",
-//                                "/api/swagger-ui/**",
-//                                "/api/swagger-ui.html",
-//                                "/api/docs/**",
-//                                "/api/files/**",
-//                                 "/api/files/upload",
-//                                "/api/uploads",
-//                                "/api/uploads/**"
-//                        ).permitAll()
-//                        .requestMatchers("/api/**").authenticated()
-//                        .anyRequest().permitAll()
-//                )
-//                .securityMatcher("/api/**")
-//                .sessionManagement(session -> session
-//                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-//                )
-//                // Spring Security 6 OAuth2 Resource Server 설정
-//                .oauth2ResourceServer(oauth2 -> oauth2
-//                        .bearerTokenResolver(bearerTokenResolver)
-//                        .jwt(jwt -> jwt
-//                                .decoder(jwtDecoder)
-//                                .jwtAuthenticationConverter(jwtAuthenticationConverter)
-//                        )
-//                );
-//
-//        return http.build();
-//    }
-
 }
