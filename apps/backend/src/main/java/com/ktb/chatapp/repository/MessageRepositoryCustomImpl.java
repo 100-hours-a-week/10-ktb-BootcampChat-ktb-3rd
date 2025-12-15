@@ -2,6 +2,7 @@ package com.ktb.chatapp.repository;
 
 import com.ktb.chatapp.model.Message;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -24,13 +25,16 @@ public class MessageRepositoryCustomImpl implements MessageRepositoryCustom {
         Query query = new Query(
                 Criteria.where("_id").in(messageIds)
                         .and("allRead").ne(true)
-                        .and("readers").size(expectedReaders)
+                        .and("readerCount").is(expectedReaders)
         );
+        query.fields().include("_id");
 
-        return mongoTemplate.find(query, Message.class)
-                .stream()
-                .map(Message::getId)
-                .toList();
+        return mongoTemplate.findDistinct(
+                query,
+                "_id",
+                Message.class,
+                String.class
+        );
     }
 
     @Override
@@ -43,5 +47,27 @@ public class MessageRepositoryCustomImpl implements MessageRepositoryCustom {
                 .set("allRead", true);
 
         mongoTemplate.updateMulti(query, update, Message.class);
+    }
+
+    @Override
+    public List<String> markAllReadIfCompleted(
+            List<String> messageIds,
+            int expectedReaders
+    ) {
+        Query query = Query.query(
+                Criteria.where("_id").in(messageIds)
+                        .and("readerCount").is(expectedReaders)
+                        .and("allRead").ne(true)
+        );
+
+        Update update = new Update().set("allRead", true);
+        mongoTemplate.updateMulti(query, update, Message.class);
+
+        return mongoTemplate.findDistinct(
+                query,
+                "_id",
+                Message.class,
+                String.class
+        );
     }
 }
